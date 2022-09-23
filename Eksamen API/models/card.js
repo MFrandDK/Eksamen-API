@@ -4,10 +4,8 @@ const sql = require('mssql');
 const config = require('config');
 const con = config.get('dbConfig_UCN');
 
-const _ = require('lodash');
 
 
-// angiv kortObj og account/login/whatever som class
 // angiv constructor
 // Schema, static mv.
 // validate/validation schema 
@@ -21,8 +19,22 @@ class Card {
         this.title = cardObj.title;
         this.manacost = cardObj.manacost;
         this.cardlink = cardObj.cardlink;
-        // this.authors = _.cloneDeep(cardObj.authors); erstattes af hvad?
-    }
+        if (cardObj.power) {
+            this.power = cardObj.power;
+        }
+        if (cardObj.toughness) {
+            this.toughness = cardObj.toughness;
+        }
+        this.link = cardObj.link
+        if (cardObj.ability) {
+            this.ability = cardObj.ability;
+        }
+        if (cardObj.flavortext) {
+            this.flavortext = cardObj.flavortext;
+        }
+        this.cardstatus = cardObj.cardstatus;
+        }
+    
 
     static validationSchema() {
         const schema = Joi.object({
@@ -34,10 +46,41 @@ class Card {
                 .required(),        // DB: title NOT NULL
             manacost: Joi.number()
                 .integer(),
-            cardlink: Joi.string()
+            power: Joi.string()
+                .max(50)
+                .allow(null),
+            toughness: Joi.string()
+                .max(50)
+                .allow(null),
+            link: Joi.string()
                 .uri()
+                .max(255)
+                .required(),
+            ability: Joi.string()
+                .max(255)
+                .allow(null),
+            flavortext: Joi.string()
                 .max(255),
-            authors: Joi.array().items(Author.validationSchema())
+            cardstatus: Joi.string()
+                .max(50)
+                .required(),
+            subtype: Joi.object({
+                subtypeid: Joi.number()
+                    .integer()
+                    .min(1),
+                subtitle: Joi.string()
+                    .max(50)
+                    .required()
+                }),
+            maintype: Joi.object({
+                maintypeid: Joi.number()
+                    .integer()
+                    .min(1),
+                maintitle: Joi.string()
+                    .max(50)
+                    .required()
+                    
+                })
         })
 
         return schema;
