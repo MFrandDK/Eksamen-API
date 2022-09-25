@@ -12,7 +12,6 @@ class Card {
         }
         this.title = cardObj.title;
         this.manacost = cardObj.manacost;
-        this.cardlink = cardObj.cardlink;
         if (cardObj.power) {
             this.power = cardObj.power;
         }
@@ -156,9 +155,9 @@ class Card {
     }
 
 
-    // static readByName(cardtitle)
+    // static readByName(title)
     //
-    static readByName(cardtitle) {
+    static readByName(title) {
         return new Promise((resolve, reject) => {   // *** returns Promise
             (async () => {  // *** async anon function
                 // !!! DISCLAIMER:  a 'name' is rarely unique (i.e. John Smith), the firstname-lastname combo would not make a unique key
@@ -180,16 +179,16 @@ class Card {
 
                     // query DB (SELECT all columns FROM author table WHERE authorid)
                     const result = await pool.request()
-                        .input('cardtitle', sql.NVarChar(), cardtitle)
+                        .input('title', sql.NVarChar(), title)
                         .query(`
                             SELECT *
                             FROM mtgCardtable ct
-                            WHERE ct.cardtitle = @cardtitle
+                            WHERE ct.title = @title
                         `)
 
-                    // check if exactly one result: firstname-lastname is composite key in the liloAuthor table, we expect to see exactly one result
-                    if (result.recordset.length > 1) throw { statusCode: 500, errorMessage: `Corrupt DB, mulitple cards with name: ${cardtitle}`, errorObj: {} };
-                    if (result.recordset.length == 0) throw { statusCode: 404, errorMessage: `Card not found by name: ${cardtitle}`, errorObj: {} };
+                    // check if exactly one result: we expect to see exactly one result
+                    if (result.recordset.length > 1) throw { statusCode: 500, errorMessage: `Corrupt DB, mulitple cards with name: ${title}`, errorObj: {} };
+                    if (result.recordset.length == 0) throw { statusCode: 404, errorMessage: `Card not found by name: ${title}`, errorObj: {} };
 
                     // restructure cardWannabe
                     const cardWannabe = {
@@ -201,22 +200,22 @@ class Card {
                         link: result.recordset[0].link,
                         ability: result.recordset[0].ability,
                         flavortext: result.recordset[0].flavortext,
-                        cardstatus: result.recordset[0].cardstatus,
-                        subtype: {
-                            subtypeid: result.recordset[0].subtypeid,
-                            subtitle: result.recordset[0].subtitle
-                        },
-                        maintype: {
-                           maintypeid: result.recordset[0].maintypeid,
-                           maintitle:  result.recordset[0].maintitle
-                        }
+                        cardstatus: result.recordset[0].cardstatus
+                        // subtype: {
+                        //     subtypeid: result.recordset[0].subtypeid,
+                        //     subtitle: result.recordset[0].subtitle
+                        // },
+                        // maintype: {
+                        //    maintypeid: result.recordset[0].maintypeid,
+                        //    maintitle:  result.recordset[0].maintitle
+                        // }
                     }
 
-                    // valdiate authorWannabe
+                    // valdiate cardWannabe
                     const { error } = Card.validate(cardWannabe);
                     if (error) throw { statusCode: 500, errorMessage: `Corrupt DB, card does not validate: ${cardWannabe.cardid}`, errorObj: error };
 
-                    // resolve with author
+                    // resolve with card
                     resolve(new Card(cardWannabe))
                 } catch (err) {
                     reject(err) // reject with error
@@ -257,8 +256,8 @@ class Card {
                     let qtype;
                     if (queryObj) {
                         switch (queryObj.query) {
-                            case ('cardtitle'):
-                                qcolumnname = 'cardtitle';
+                            case ('title'):
+                                qcolumnname = 'title';
                                 qtype = sql.NVarChar();
                                 break;
                             default: break;
@@ -348,7 +347,7 @@ class Card {
                 // check if author with firstname-lastname exists
                 try {
                     // check by name if author exists
-                    const card = await Card.readByName(this.cardtitle);
+                    const card = await Card.readByName(this.title);
 
                     // if found, that is an error
                     const error = { statusCode: 409, errorMessage: `Card already exists`, errorObj: {} }
@@ -384,7 +383,7 @@ class Card {
 
                     // query DB --> INSERT INTO liloAuthor; SELECT WHERE authorid = SCOPE_IDENTITY()
                     const resultCard = await pool.request()
-                        .input('cardtitle', sql.NVarChar(), this.cardtitle)
+                        .input('title', sql.NVarChar(), this.title)
                         .input('manacost', sql.NVarChar(), this.manacost)
                         .input('power', sql.NVarChar(), this.power)
                         .input('toughness', sql.NVarChar(), this.toughness)
@@ -459,7 +458,7 @@ class Card {
 
                     // query DB --> UPDATE liloAuthor WHERE authorid
                     tmpResult = await pool.request()
-                        .input('cardtitle', sql.NVarChar(), this.cardtitle)
+                        .input('title', sql.NVarChar(), this.title)
                         .input('manacost', sql.NVarChar(), this.manacost)
                         .input('power', sql.NVarChar(), this.power)
                         .input('toughness', sql.NVarChar(), this.toughness)
@@ -469,7 +468,7 @@ class Card {
                         .input('cardstatus', sql.NVarChar(), this.cardstatus)
                         .query(`
                             UPDATE mtgCardtable 
-                            SET cardtitle = @cardtitle, manacost = @manacost, power = @power, toughness = @toughness, link = @link, ability = @ability, flavortext = @flavortext, cardstatus = @cardstatus
+                            SET title = @title, manacost = @manacost, power = @power, toughness = @toughness, link = @link, ability = @ability, flavortext = @flavortext, cardstatus = @cardstatus
                             WHERE cardid = @cardid
                         `)
 
